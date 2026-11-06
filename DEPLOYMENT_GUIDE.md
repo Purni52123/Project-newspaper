@@ -69,3 +69,4 @@ If you also want your FastAPI backend accessible over the internet 24/7:
    - **Start Command:** `uvicorn api:app --host 0.0.0.0 --port $PORT`
 5. Click **Deploy Web Service**.
 6. Render will provide a free HTTPS URL like `https://hin-gnn-news-api.onrender.com` with Swagger docs at `/docs` and admin panel at `/dashboard`.
+
