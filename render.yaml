@@ -1,4 +1,15 @@
 services:
+  # 1. Streamlit Frontend Website
+  - type: web
+    name: hin-gnn-news-frontend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+  # 2. FastAPI Backend API & Admin Panel
   - type: web
     name: hin-gnn-news-api
     runtime: python
@@ -7,4 +18,3 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-
