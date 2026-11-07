@@ -31,48 +31,59 @@ user_histories = {}
 
 def load_data():
     global news_df, embeddings, user_map, news_map, popularity, user_histories
-    news_path = os.path.join(ARTIFACTS_DIR, "news.csv")
-    emb_path = os.path.join(ARTIFACTS_DIR, "embeddings.npy")
-    user_map_path = os.path.join(ARTIFACTS_DIR, "user_map.json")
-    news_map_path = os.path.join(ARTIFACTS_DIR, "news_map.json")
-    pop_path = os.path.join(ARTIFACTS_DIR, "popularity.json")
+    try:
+        news_path = os.path.join(ARTIFACTS_DIR, "news.csv")
+        emb_path = os.path.join(ARTIFACTS_DIR, "embeddings.npy")
+        user_map_path = os.path.join(ARTIFACTS_DIR, "user_map.json")
+        news_map_path = os.path.join(ARTIFACTS_DIR, "news_map.json")
+        pop_path = os.path.join(ARTIFACTS_DIR, "popularity.json")
 
-    if not all(os.path.exists(p) for p in [news_path, emb_path, user_map_path, news_map_path, pop_path]):
+        if not all(os.path.exists(p) for p in [news_path, emb_path, user_map_path, news_map_path, pop_path]):
+            return False
+
+        news_df = pd.read_csv(news_path).fillna("")
+        embeddings = np.load(emb_path)
+        with open(user_map_path, "r", encoding="utf-8") as f:
+            user_map = json.load(f)
+        with open(news_map_path, "r", encoding="utf-8") as f:
+            news_map = json.load(f)
+        with open(pop_path, "r", encoding="utf-8") as f:
+            popularity = json.load(f)
+
+        # Load history
+        train_beh_path = os.path.join(BASE_DIR, "data", "train", "behaviors.tsv")
+        if os.path.exists(train_beh_path):
+            with open(train_beh_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split("\t")
+                    if len(parts) >= 4:
+                        uid = parts[1]
+                        hist = parts[3].split()
+                        user_histories[uid] = hist
+        return True
+    except Exception as e:
+        print(f"[!] Error in load_data: {e}")
         return False
 
-    news_df = pd.read_csv(news_path).fillna("")
-    embeddings = np.load(emb_path)
-    with open(user_map_path, "r", encoding="utf-8") as f:
-        user_map = json.load(f)
-    with open(news_map_path, "r", encoding="utf-8") as f:
-        news_map = json.load(f)
-    with open(pop_path, "r", encoding="utf-8") as f:
-        popularity = json.load(f)
-
-    # Load history
-    train_beh_path = os.path.join(BASE_DIR, "data", "train", "behaviors.tsv")
-    if os.path.exists(train_beh_path):
-        with open(train_beh_path, "r", encoding="utf-8") as f:
-            for line in f:
-                parts = line.strip().split("\t")
-                if len(parts) >= 4:
-                    uid = parts[1]
-                    hist = parts[3].split()
-                    user_histories[uid] = hist
-    return True
+# Initialize on import for serverless environments
+load_data()
 
 @app.on_event("startup")
 def startup_event():
-    success = load_data()
-    if not success:
-        print("[!] Warning: Artifacts not found. Run 'python pipeline.py' first.")
+    load_data()
 
 @app.get("/")
 def root():
+    if embeddings is None:
+        load_data()
     return {
         "system": "HIN-GNN Diversified News Recommendation System API",
         "status": "online" if embeddings is not None else "model_not_trained",
         "docs_url": "/docs",
+        "dashboard_ui": "/dashboard",
+        "available_users": len(user_map) if user_map else 0,
+        "available_articles": len(news_df) if news_df is not None else 0
+    }
         "dashboard_ui": "/dashboard",
         "available_users": len(user_map),
         "available_articles": len(news_df) if news_df is not None else 0
