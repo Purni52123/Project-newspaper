@@ -20,7 +20,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-ARTIFACTS_DIR = "artifacts"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ARTIFACTS_DIR = os.path.join(BASE_DIR, "artifacts")
 news_df = None
 embeddings = None
 user_map = {}
@@ -49,7 +50,7 @@ def load_data():
         popularity = json.load(f)
 
     # Load history
-    train_beh_path = os.path.join("data", "train", "behaviors.tsv")
+    train_beh_path = os.path.join(BASE_DIR, "data", "train", "behaviors.tsv")
     if os.path.exists(train_beh_path):
         with open(train_beh_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -81,7 +82,7 @@ def root():
 def dashboard_ui():
     """Returns a modern, CSS-styled web dashboard directly from the FastAPI backend."""
     css_content = ""
-    css_path = os.path.join("assets", "style.css")
+    css_path = os.path.join(BASE_DIR, "assets", "style.css")
     if os.path.exists(css_path):
         with open(css_path, "r", encoding="utf-8") as f:
             css_content = f.read()
