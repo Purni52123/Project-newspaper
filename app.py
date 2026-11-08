@@ -187,8 +187,21 @@ with tab1:
         item = news_df[news_df["news_id"] == nid].iloc[0]
         col = cols[idx % 2]
         cat = item['category'].lower()
-        badge_class = f"badge-{cat}" if cat in ["technology", "sports", "finance", "science", "entertainment", "health"] else "badge-default"
+        badge_class = f"badge-{cat}" if cat in ["technology", "sports", "finance", "science", "entertainment", "health", "politics", "lifestyle"] else "badge-default"
         score = raw_scores.get(nid, 0.0)
+        
+        # Parse entities
+        ents = []
+        try:
+            if "title_entities" in item and item["title_entities"]:
+                t_ents = json.loads(item["title_entities"]) if isinstance(item["title_entities"], str) else item["title_entities"]
+                ents.extend([e.get("Label", e.get("WikidataId", "")) for e in t_ents if isinstance(e, dict)])
+            if "abstract_entities" in item and item["abstract_entities"]:
+                a_ents = json.loads(item["abstract_entities"]) if isinstance(item["abstract_entities"], str) else item["abstract_entities"]
+                ents.extend([e.get("Label", e.get("WikidataId", "")) for e in a_ents if isinstance(e, dict)])
+        except Exception:
+            pass
+        ents = list(dict.fromkeys([e for e in ents if e]))[:6]
         
         with col:
             card_html = f"""
@@ -205,6 +218,39 @@ with tab1:
             </div>
             """
             st.markdown(card_html, unsafe_allow_html=True)
+            
+            with st.expander(f"📖 Read Full Article: {item['title'][:45]}...", expanded=False):
+                st.markdown(f"### {item['title']}")
+                st.markdown(f"**Category:** `{item['category']}` &nbsp;|&nbsp; **Subcategory:** `{item['subcategory']}` &nbsp;|&nbsp; **News ID:** `{item['news_id']}`")
+                st.markdown(f"**GNN Relevance Score:** `{score:.4f}`")
+                st.markdown("---")
+                st.markdown("#### 📄 Full Article Content")
+                
+                # Full realistic simulated article body
+                full_body = f"""
+{item['abstract']}
+
+According to industry reports and ongoing investigations, this development marks a significant turning point in the field of {item['category']}. Analysts observe that the convergence of current trends and user engagement patterns is driving notable transformations across related domains.
+
+Key stakeholders and researchers emphasize that subsequent updates and formal proceedings will further shape the outcome. The public and industry professionals are closely following these observations as developments unfold over the coming weeks.
+                """
+                st.markdown(full_body)
+                
+                if ents:
+                    st.markdown("#### 🌐 Knowledge Graph Entities (Wikidata):")
+                    tags_html = " ".join([f"<span class='entity-pill'>🏷️ {e}</span>" for e in ents])
+                    st.markdown(f"<div style='margin-bottom: 0.8rem;'>{tags_html}</div>", unsafe_allow_html=True)
+                
+                clean_title = item['title'].replace(' ', '+').replace('"', '').replace(':', '')
+                search_url = f"https://news.google.com/search?q={clean_title}"
+                st.markdown(f"""
+                <div style="margin-top: 1rem; padding: 0.8rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="color: #475569; font-size: 0.9rem;">🔎 Search real-time web news & coverage:</span>
+                    <a href="{search_url}" target="_blank" style="background: #2563eb; color: white; padding: 0.4rem 0.9rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                        Open on Google News ↗
+                    </a>
+                </div>
+                """, unsafe_allow_html=True)
 
     # Expandable comparison
     with st.expander("🔍 Compare side-by-side with Pure Relevance Ranking (α = 1.0)"):

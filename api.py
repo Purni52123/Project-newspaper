@@ -84,10 +84,6 @@ def root():
         "available_users": len(user_map) if user_map else 0,
         "available_articles": len(news_df) if news_df is not None else 0
     }
-        "dashboard_ui": "/dashboard",
-        "available_users": len(user_map),
-        "available_articles": len(news_df) if news_df is not None else 0
-    }
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard_ui():
